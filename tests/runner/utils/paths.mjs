@@ -9,3 +9,4 @@ export const coreDistEntry = path.resolve(rootDir, "packages", "core", "dist", "
 export const configDistEntry = path.resolve(rootDir, "packages", "config", "dist", "index.js");
 export const vitePluginDistEntry = path.resolve(rootDir, "packages", "vite-plugin", "dist", "index.js");
 export const vitePluginPackageDir = path.resolve(rootDir, "packages", "vite-plugin");
+export const appPackageDir = path.resolve(rootDir, "packages", "app");

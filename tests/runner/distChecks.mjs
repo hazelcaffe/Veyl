@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { cleanupFiles } from "./artifacts.mjs";
 import { assertContains, assertNotContains, assertRegex } from "./utils/assertions.mjs";
 import {
+    appPackageDir,
     casesDir,
     configDistEntry,
     coreDistEntry,
@@ -119,6 +120,7 @@ export async function runDistChecks() {
     fs.rmSync(scratchDir, { recursive: true, force: true });
 
     const vitePluginResult = await runVitePluginCheck();
+    const reactViteResult = await runReactViteCheck();
 
     return [
         {
@@ -130,6 +132,7 @@ export async function runDistChecks() {
             output: fileStdout,
         },
         vitePluginResult,
+        reactViteResult,
     ];
 }
 
@@ -205,6 +208,125 @@ async function runVitePluginCheck() {
 
     return {
         name: "vite-plugin",
+        output: stdout,
+    };
+}
+
+async function runReactViteCheck() {
+    const vite = await import(
+        pathToFileURL(path.resolve(appPackageDir, "node_modules", "vite", "dist", "node", "index.js"))
+            .href
+    );
+    const react = await import(
+        pathToFileURL(
+            path.resolve(appPackageDir, "node_modules", "@vitejs", "plugin-react", "dist", "index.js")
+        ).href
+    );
+    const vitePlugin = await import(pathToFileURL(vitePluginDistEntry).href);
+    const caseDir = path.resolve(casesDir, "react-vite");
+    const outDir = path.resolve(caseDir, "dist");
+
+    fs.rmSync(outDir, { recursive: true, force: true });
+
+    await vite.build({
+        root: caseDir,
+        logLevel: "silent",
+        configFile: false,
+        resolve: {
+            alias: {
+                "@vitejs/plugin-react": path.resolve(
+                    appPackageDir,
+                    "node_modules",
+                    "@vitejs",
+                    "plugin-react"
+                ),
+                react: path.resolve(appPackageDir, "node_modules", "react"),
+                "react-dom": path.resolve(appPackageDir, "node_modules", "react-dom"),
+            },
+        },
+        build: {
+            outDir,
+            minify: false,
+            rollupOptions: {
+                input: path.resolve(caseDir, "src", "entry.jsx"),
+                output: {
+                    entryFileNames: "entry.js",
+                    format: "es",
+                },
+            },
+        },
+        plugins: [
+            react.default(),
+            vitePlugin.default({
+                config: {
+                    minify: false,
+                    obfuscate: {
+                        strings: {
+                            enabled: true,
+                            encode: true,
+                            method: "array",
+                        },
+                        numbers: {
+                            enabled: true,
+                            method: "offset",
+                        },
+                        booleans: {
+                            enabled: true,
+                            method: "number",
+                        },
+                    },
+                    features: {
+                        randomized_unique_identifiers: true,
+                    },
+                },
+            }),
+        ],
+    });
+
+    const outputPath = path.resolve(outDir, "entry.js");
+    const outputCode = fs.readFileSync(outputPath, "utf8");
+    const stdout = run(
+        process.execPath,
+        [
+            "--no-warnings",
+            "--input-type=module",
+            "--eval",
+            `import(${JSON.stringify(pathToFileURL(outputPath).href)}).then(() => process.exit(0));`,
+        ],
+        rootDir,
+        {
+            captureStdout: true,
+        }
+    ).trim();
+    const expected =
+        '<section class="score-card ready" data-total="49"><h1>React Veyl</h1><ul><li>1:13</li><li>2:17</li><li>3:19</li></ul><p>ready</p></section>';
+
+    if (stdout !== expected) {
+        throw new Error(
+            `[dist] obfuscated React/Vite output mismatch\nexpected: ${expected}\nactual:   ${stdout}`
+        );
+    }
+
+    assertRegex(
+        outputCode,
+        /_0x[0-9a-f]+/,
+        "[dist] React/Vite build should emit randomized identifiers"
+    );
+    assertContains(
+        outputCode,
+        "TextDecoder",
+        "[dist] React/Vite build should include encoded string helpers"
+    );
+    assertNotContains(
+        outputCode,
+        "React Veyl",
+        "[dist] React/Vite build should not leave fixture text unobfuscated"
+    );
+
+    fs.rmSync(outDir, { recursive: true, force: true });
+
+    return {
+        name: "react-vite",
         output: stdout,
     };
 }

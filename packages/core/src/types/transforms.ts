@@ -1,6 +1,6 @@
 import type * as t from "@babel/types";
 import type { NumberObfuscationOperator } from "@skylvi/veyl-config";
-import type { BabelNode, PropKeyNode } from "./babel.js";
+import type { BabelNode, BabelNodePath, BabelScope, PropKeyNode } from "./babel.js";
 import type { RuntimeHelperOptions } from "./runtime.js";
 
 export interface LiteralObfuscationResult {
@@ -60,6 +60,7 @@ export interface VariableDeclaratorPath {
         id: BabelNode;
         init: BabelNode | null;
     };
+    scope: BabelScope;
 }
 
 export interface ClassDeclarationPath {
@@ -74,6 +75,7 @@ export interface MemberExpressionPath {
         object: BabelNode;
         property: BabelNode;
     };
+    parentPath?: BabelNodePath;
 }
 
 export interface MemberExpressionNode extends BabelNode {

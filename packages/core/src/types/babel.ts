@@ -1,8 +1,13 @@
 export interface BabelScope {
     bindings: Record<string, unknown>;
     crawl(): void;
+    getBinding(name: string): BabelBinding | undefined;
     hasOwnBinding(name: string): boolean;
     rename(oldName: string, newName?: string): void;
+}
+
+export interface BabelBinding {
+    referencePaths: BabelNodePath[];
 }
 
 export interface BabelNode {
@@ -17,7 +22,7 @@ export interface BabelNode {
 export interface BabelNodePath {
     node?: BabelNode;
     parent?: BabelNode;
-    parentPath?: BabelNodePath;
+    parentPath?: BabelNodePath | null;
     key?: string | number;
     scope: BabelScope;
     replaceWith(node: BabelNode): void;

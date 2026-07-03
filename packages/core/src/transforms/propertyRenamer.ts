@@ -1,6 +1,6 @@
 import { traverse } from "../babel/interop.js";
 import { staticKeyName } from "../babel/predicates.js";
-import type { BabelNode } from "../types/babel.js";
+import type { BabelNode, BabelNodePath } from "../types/babel.js";
 import type {
     ClassDeclarationPath,
     MemberExpressionNode,
@@ -26,7 +26,8 @@ export function renameProperties(ast: object, names: NameGenerator): PropertyRen
             if (
                 pathNode.node.id.type === "Identifier" &&
                 typeof pathNode.node.id.name === "string" &&
-                pathNode.node.init?.type === "ObjectExpression"
+                pathNode.node.init?.type === "ObjectExpression" &&
+                isSafeLocalObjectBinding(pathNode)
             ) {
                 localObjBindings.add(pathNode.node.id.name);
                 markLocalObjectExpression(
@@ -121,7 +122,9 @@ export function renameProperties(ast: object, names: NameGenerator): PropertyRen
                 !isLocalPropertyAccess(
                     pathNode.node.object,
                     localObjBindings,
-                    localClassInstanceBindings
+                    localClassInstanceBindings,
+                    localClassBodies,
+                    pathNode.parentPath
                 )
             ) {
                 return;
@@ -195,7 +198,9 @@ export function renameProperties(ast: object, names: NameGenerator): PropertyRen
                 !isLocalPropertyAccess(
                     pathNode.node.object,
                     localObjBindings,
-                    localClassInstanceBindings
+                    localClassInstanceBindings,
+                    localClassBodies,
+                    pathNode.parentPath
                 )
             ) {
                 return;
@@ -271,12 +276,12 @@ function markLocalObjectExpression(
 function isLocalPropertyAccess(
     node: BabelNode,
     localObjBindings: Set<string>,
-    localClassInstanceBindings: Set<string>
+    localClassInstanceBindings: Set<string>,
+    localClassBodies: Set<BabelNode>,
+    pathNode?: BabelNodePath
 ): boolean {
     if (node.type === "ThisExpression") {
-        // Inside renamed local classes, `this.foo` needs to follow the same rename rules as
-        // instance variables created from `new LocalClass()`.
-        return true;
+        return isInsideLocalClassBody(pathNode, localClassBodies);
     }
 
     if (node.type === "Identifier") {
@@ -299,8 +304,60 @@ function isLocalPropertyAccess(
     return isLocalPropertyAccess(
         memberExpression.object,
         localObjBindings,
-        localClassInstanceBindings
+        localClassInstanceBindings,
+        localClassBodies,
+        pathNode
     );
+}
+
+function isInsideLocalClassBody(
+    pathNode: BabelNodePath | null | undefined,
+    localClassBodies: Set<BabelNode>
+): boolean {
+    let current = pathNode;
+
+    while (current !== null && current !== undefined) {
+        if (current.node !== undefined && localClassBodies.has(current.node)) {
+            return true;
+        }
+
+        current = current.parentPath;
+    }
+
+    return false;
+}
+
+function isSafeLocalObjectBinding(pathNode: VariableDeclaratorPath): boolean {
+    const bindingName =
+        pathNode.node.id.type === "Identifier" && typeof pathNode.node.id.name === "string"
+            ? pathNode.node.id.name
+            : null;
+    const binding = bindingName === null ? null : pathNode.scope.getBinding(bindingName);
+
+    if (binding === null || binding === undefined) {
+        return false;
+    }
+
+    return binding.referencePaths.every((referencePath: BabelNodePath) =>
+        isSafeLocalObjectReference(referencePath)
+    );
+}
+
+function isSafeLocalObjectReference(referencePath: BabelNodePath): boolean {
+    const parent = referencePath.parent;
+    const node = referencePath.node;
+
+    if (parent === undefined || node === undefined) {
+        return false;
+    }
+
+    if (parent.type === "MemberExpression" || parent.type === "OptionalMemberExpression") {
+        const memberExpression = parent as MemberExpressionNode;
+
+        return memberExpression.object === node;
+    }
+
+    return false;
 }
 
 // Leaves externally meaningful property names alone.
