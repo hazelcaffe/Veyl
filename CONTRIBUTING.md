@@ -8,7 +8,7 @@
 
 ## Setup
 ```sh
-git clone https://github.com/skylvie/veyl
+git clone https://github.com/hazelcaffe/veyl
 cd veyl
 pnpm install
 pnpm build
@@ -61,4 +61,5 @@ packages/
   config/ # local config parsing/resolution package
   core/   # @skylvi/veyl API package
   cli/    # @skylvi/veyl-cli executable package
+  vite-plugin/ # @skylvi/vite-plugin package
 ```

@@ -13,7 +13,7 @@ veyl -i ./input.ts
 
 ## Install From Source
 ```sh
-git clone https://github.com/skylvie/veyl
+git clone https://github.com/hazelcaffe/veyl
 cd veyl
 pnpm install
 pnpm build
