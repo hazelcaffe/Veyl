@@ -1,12 +1,14 @@
 {
-    "name": "@skylvi/veyl",
-    "version": "3.0.2",
+    "name": "@skylvi/veyl-vite-plugin",
+    "version": "1.0.0",
     "private": false,
     "keywords": [
         "obfuscation",
-        "obfuscator"
+        "obfuscator",
+        "vite",
+        "vite-plugin"
     ],
-    "description": "A complete and customizable JavaScript and TypeScript obfuscation utility",
+    "description": "A Vite plugin that obfuscates build output with Veyl",
     "author": {
         "name": "Hazelcaffe",
         "email": "hazel@qwq.sh",
@@ -33,22 +35,20 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
-        },
-        "./browser": {
-            "types": "./dist/browser.d.ts",
-            "import": "./dist/browser.js"
         }
     },
     "scripts": {
-        "build": "pnpm --filter @skylvi/veyl-config build && rm -rf dist && tsc --project tsconfig.json",
-        "typecheck": "pnpm --filter @skylvi/veyl-config build && tsc --project tsconfig.json --noEmit"
+        "build": "pnpm --filter @skylvi/veyl-config build && pnpm --filter @skylvi/veyl build && rm -rf dist && tsc --project tsconfig.json",
+        "typecheck": "pnpm --filter @skylvi/veyl-config build && pnpm --filter @skylvi/veyl build && tsc --project tsconfig.json --noEmit"
+    },
+    "peerDependencies": {
+        "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
     },
     "dependencies": {
-        "@skylvi/veyl-config": "workspace:*",
-        "@babel/generator": "^7.29.1",
-        "@babel/parser": "^7.29.2",
-        "@babel/traverse": "^7.29.0",
-        "@babel/types": "^7.29.0",
-        "esbuild": "^0.28.0"
+        "@skylvi/veyl": "workspace:*",
+        "@skylvi/veyl-config": "workspace:*"
+    },
+    "devDependencies": {
+        "vite": "^8.0.9"
     }
 }

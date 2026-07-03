@@ -1,4 +1,5 @@
 import path from "node:path";
+import { assertContains, assertNotContains, assertRegex } from "./runner/utils/assertions.mjs";
 
 export function getCases(casesDir) {
     return [
@@ -32,7 +33,11 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, " + ", "string-split case should concatenate split chunks");
+                assertContains(
+                    outputCode,
+                    " + ",
+                    "string-split case should concatenate split chunks"
+                );
                 assertNotContains(
                     outputCode,
                     '.join(" ")',
@@ -51,7 +56,11 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "TextDecoder", "string-encoding case should inject decoder helpers");
+                assertContains(
+                    outputCode,
+                    "TextDecoder",
+                    "string-encoding case should inject decoder helpers"
+                );
             },
         },
         {
@@ -74,7 +83,11 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "64", "number-offset case should encode the configured offset");
+                assertContains(
+                    outputCode,
+                    "64",
+                    "number-offset case should encode the configured offset"
+                );
             },
         },
         {
@@ -101,7 +114,11 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "12345", "boolean-number case should include the configured true token");
+                assertContains(
+                    outputCode,
+                    "12345",
+                    "boolean-number case should include the configured true token"
+                );
             },
         },
         {
@@ -145,8 +162,16 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "!==", "dead-code-injection case should inject impossible branches");
-                assertContains(outputCode, "switch", "dead-code-injection case should inject decoy switch logic");
+                assertContains(
+                    outputCode,
+                    "!==",
+                    "dead-code-injection case should inject impossible branches"
+                );
+                assertContains(
+                    outputCode,
+                    "switch",
+                    "dead-code-injection case should inject decoy switch logic"
+                );
             },
         },
         {
@@ -155,8 +180,16 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "while (!", "flattening case should emit dispatcher loop");
-                assertContains(outputCode, "switch", "flattening case should emit dispatcher switch");
+                assertContains(
+                    outputCode,
+                    "while (!",
+                    "flattening case should emit dispatcher loop"
+                );
+                assertContains(
+                    outputCode,
+                    "switch",
+                    "flattening case should emit dispatcher switch"
+                );
             },
         },
         {
@@ -165,8 +198,16 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "?", "simplify case should rewrite returns into a conditional expression");
-                assertNotContains(outputCode, "if (", "simplify case should remove the original if return structure");
+                assertContains(
+                    outputCode,
+                    "?",
+                    "simplify case should rewrite returns into a conditional expression"
+                );
+                assertNotContains(
+                    outputCode,
+                    "if (",
+                    "simplify case should remove the original if return structure"
+                );
             },
         },
         {
@@ -175,8 +216,16 @@ export function getCases(casesDir) {
             entry: "entry.ts",
             configFile: "veyl_config.json",
             validate(outputCode) {
-                assertContains(outputCode, "new Function", "functionify case should emit new Function");
-                assertContains(outputCode, "TextDecoder", "functionify case should inject string decoder");
+                assertContains(
+                    outputCode,
+                    "new Function",
+                    "functionify case should emit new Function"
+                );
+                assertContains(
+                    outputCode,
+                    "TextDecoder",
+                    "functionify case should inject string decoder"
+                );
                 assertNotContains(
                     outputCode,
                     "const alphabet =",
@@ -267,22 +316,4 @@ export function getCases(casesDir) {
             },
         },
     ];
-}
-
-function assertContains(haystack, needle, message) {
-    if (!haystack.includes(needle)) {
-        throw new Error(message);
-    }
-}
-
-function assertNotContains(haystack, needle, message) {
-    if (haystack.includes(needle)) {
-        throw new Error(message);
-    }
-}
-
-function assertRegex(haystack, regex, message) {
-    if (!regex.test(haystack)) {
-        throw new Error(message);
-    }
 }
